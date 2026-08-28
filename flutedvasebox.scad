@@ -52,14 +52,14 @@
 //     "100x100" label overshoots its actual peak radius by about 0.6 mm —
 //     not reproduced, since a size parameter that doesn't match the printed
 //     part isn't useful.
-//   * flute_count isn't fixed -- it's derived from flute_wavelength (5 mm,
-//     the reference's own measured period, see the header) and the actual
-//     perimeter, rounded to a whole number of flutes (77 at the default
-//     100x100 size, one more than the 76 a least-squares sweep against the
-//     reference found best -- that sweep is what confirmed the period was
-//     5 mm in the first place, see the header). Deriving the count this
-//     way means resizing the box changes how many grooves there are,
-//     holding their width close to constant, rather than the reverse.
+//   * flute_count isn't fixed -- it's floor(perimeter/flute_wavelength),
+//     flute_wavelength being 5mm, the reference's own measured period (see
+//     the header, and floor() rather than round() -- see flute_count's own
+//     comment). 76 at the default 100x100 size, matching the least-squares
+//     sweep against the reference that confirmed the period was 5mm in the
+//     first place. Deriving the count this way means resizing the box
+//     changes how many grooves there are, holding their width close to
+//     constant, rather than the reverse.
 //   * above the flat foot, the original's clipping cone likely isn't
 //     perfectly linear all the way from the foot to the peak (there are a
 //     couple of short sub-stages visible in the mesh right near the foot
@@ -107,12 +107,18 @@ corner_radius = 5.825;
 flute_wavelength = 5;
 // Number of flutes around the full perimeter, derived from the pitch above
 // rather than fixed -- so resizing the box changes how many grooves there
-// are, not how wide each one is. 77 at the default 100x100 size.
+// are, not how wide each one is. floor(), not round(): the perimeter at
+// the default 100x100 size is 76.99 wavelengths, and round() takes that to
+// 77 -- one more flute than the least-squares sweep found to actually fit
+// the reference (corner_radius above was calibrated specifically against
+// 76; even one flute off drags flat-face rms from 0.002mm to 0.74mm, an
+// obvious mismatch, not a rounding nicety). floor() keeps the default at
+// 76 and, in general, never compresses the pitch tighter than the target.
 flute_count = let(
     HX0 = width/2 - flute_depth/2,
     HY0 = depth/2 - flute_depth/2,
     R0 = min(corner_radius, HX0, HY0)
-) round((4*(HX0-R0) + 4*(HY0-R0) + 2*PI*R0) / flute_wavelength);
+) floor((4*(HX0-R0) + 4*(HY0-R0) + 2*PI*R0) / flute_wavelength);
 // Height above the foot where the clipping cone reaches the ridge (peak)
 // radius (measured ~7.76 mm) -- ridges clear the cone here, and the
 // object becomes a plain uniform extrusion above this height.
