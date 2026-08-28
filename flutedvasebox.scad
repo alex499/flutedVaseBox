@@ -52,13 +52,15 @@
 //     "100x100" label overshoots its actual peak radius by about 0.6 mm —
 //     not reproduced, since a size parameter that doesn't match the printed
 //     part isn't useful.
-//   * flute count (not a fixed 5 mm wavelength) is the parameter, so the
-//     pattern always tiles with zero seam as width/depth/corner_radius
-//     change. At the default size the true count (76, found by sweeping
-//     flute_count against the reference until the flat-face radius lines
-//     up -- a wrong guess is unmistakable, it beats instantly against the
-//     wrong period) makes wavelength come out to almost exactly 5 mm; other
-//     sizes will drift from 5 mm somewhat as flute_count is a whole number.
+//   * flute_count isn't fixed -- it's derived from flute_wavelength (the
+//     measured pitch, ~5.0652 mm) and the actual perimeter, rounded to a
+//     whole number of flutes. That measured pitch itself came from sweeping
+//     flute_count against the reference at the default 100x100 size until
+//     the flat-face radius lined up (a wrong guess is unmistakable, it beats
+//     instantly against the wrong period) and reading the wavelength back
+//     off the count that won (76). Deriving the count this way means
+//     resizing the box changes how many grooves there are, holding their
+//     width close to constant, rather than the reverse.
 //   * above the flat foot, the original's clipping cone likely isn't
 //     perfectly linear all the way from the foot to the peak (there are a
 //     couple of short sub-stages visible in the mesh right near the foot
@@ -91,11 +93,6 @@ height = 50;
 $fa = 2;
 $fs = 0.3;
 
-// Number of flutes wrapped around the full perimeter. A count, not a fixed
-// wavelength, so the pattern always tiles seamlessly as width/depth/
-// corner_radius change. Actual wavelength = perimeter/flute_count, ~5 mm at
-// the default 100x100 size.
-flute_count = 76;
 // Peak-to-valley radial depth of each flute, mm (measured: 1.25949).
 flute_depth = 1.25949;
 // Corner rounding of the underlying (unfluted) squircle, mm. Measured by a
@@ -104,6 +101,19 @@ flute_depth = 1.25949;
 // tessellation noise (rms 0.002 mm) is 5.825, well off the first visual
 // guess of 4.
 corner_radius = 5.825;
+// Target groove pitch, mm -- measured 5.06516 at the default 100x100 size
+// (76 flutes around a perimeter of 384.95). Flutes are sized to hold this
+// pitch as width/depth change (see flute_count below), rather than holding
+// a fixed count and letting the grooves stretch or squeeze to fit.
+flute_wavelength = 5.0652;
+// Number of flutes around the full perimeter, derived from the pitch above
+// rather than fixed -- so resizing the box changes how many grooves there
+// are, not how wide each one is. 76 at the default 100x100 size.
+flute_count = let(
+    HX0 = width/2 - flute_depth/2,
+    HY0 = depth/2 - flute_depth/2,
+    R0 = min(corner_radius, HX0, HY0)
+) round((4*(HX0-R0) + 4*(HY0-R0) + 2*PI*R0) / flute_wavelength);
 // Height above the foot where the clipping cone reaches the ridge (peak)
 // radius (measured ~7.76 mm) -- ridges clear the cone here, and the
 // object becomes a plain uniform extrusion above this height.
