@@ -52,15 +52,14 @@
 //     "100x100" label overshoots its actual peak radius by about 0.6 mm —
 //     not reproduced, since a size parameter that doesn't match the printed
 //     part isn't useful.
-//   * flute_count isn't fixed -- it's derived from flute_wavelength (the
-//     measured pitch, ~5.0652 mm) and the actual perimeter, rounded to a
-//     whole number of flutes. That measured pitch itself came from sweeping
-//     flute_count against the reference at the default 100x100 size until
-//     the flat-face radius lined up (a wrong guess is unmistakable, it beats
-//     instantly against the wrong period) and reading the wavelength back
-//     off the count that won (76). Deriving the count this way means
-//     resizing the box changes how many grooves there are, holding their
-//     width close to constant, rather than the reverse.
+//   * flute_count isn't fixed -- it's derived from flute_wavelength (5 mm,
+//     the reference's own measured period, see the header) and the actual
+//     perimeter, rounded to a whole number of flutes (77 at the default
+//     100x100 size, one more than the 76 a least-squares sweep against the
+//     reference found best -- that sweep is what confirmed the period was
+//     5 mm in the first place, see the header). Deriving the count this
+//     way means resizing the box changes how many grooves there are,
+//     holding their width close to constant, rather than the reverse.
 //   * above the flat foot, the original's clipping cone likely isn't
 //     perfectly linear all the way from the foot to the peak (there are a
 //     couple of short sub-stages visible in the mesh right near the foot
@@ -101,14 +100,14 @@ flute_depth = 1.25949;
 // tessellation noise (rms 0.002 mm) is 5.825, well off the first visual
 // guess of 4.
 corner_radius = 5.825;
-// Target groove pitch, mm -- measured 5.06516 at the default 100x100 size
-// (76 flutes around a perimeter of 384.95). Flutes are sized to hold this
-// pitch as width/depth change (see flute_count below), rather than holding
-// a fixed count and letting the grooves stretch or squeeze to fit.
-flute_wavelength = 5.0652;
+// Target groove pitch, mm -- the reference's actual measured period (see
+// the header). Flutes are sized to hold this pitch as width/depth change
+// (see flute_count below), rather than holding a fixed count and letting
+// the grooves stretch or squeeze to fit.
+flute_wavelength = 5;
 // Number of flutes around the full perimeter, derived from the pitch above
 // rather than fixed -- so resizing the box changes how many grooves there
-// are, not how wide each one is. 76 at the default 100x100 size.
+// are, not how wide each one is. 77 at the default 100x100 size.
 flute_count = let(
     HX0 = width/2 - flute_depth/2,
     HY0 = depth/2 - flute_depth/2,
