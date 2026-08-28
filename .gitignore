@@ -7,7 +7,7 @@
 reference/
 
 # Customizer presets, written by the OpenSCAD GUI next to the .scad
-flutedVase.json
+flutedvasebox.json
 
 # Local tool settings
 .claude/settings.local.json

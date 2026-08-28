@@ -3,7 +3,7 @@
 Parametric OpenSCAD rebuild of `Behälter v2 100x100x50` — a rounded-square block
 with a shallow vertical flute/rib texture wrapped around all four sides, originally
 a static (non-parametric) mesh exported from FreeCAD. See the header comment in
-`flutedvase.scad` for exactly what was measured off the reference mesh vs. what was
+`flutedvasebox.scad` for exactly what was measured off the reference mesh vs. what was
 turned into a parameter, and the deviations taken on purpose.
 
 ## Attribution & license
@@ -13,7 +13,7 @@ Design**, published on Printables
 (model 595626, https://www.printables.com/model/595626-stackable-box-vase-mode),
 licensed **CC BY-NC-SA 4.0** (Attribution–NonCommercial–ShareAlike). Remixing is
 permitted under that license; commercial use is not. As required by the
-share-alike term, this derivative (`flutedvase.scad` and everything in this
+share-alike term, this derivative (`flutedvasebox.scad` and everything in this
 folder) is licensed under those same CC BY-NC-SA 4.0 terms — see `LICENSE`.
 Any redistribution must credit the original author and may not be used
 commercially.
@@ -23,7 +23,7 @@ shape is meant for slicer **vase mode** (spiralized, single-wall) printing — d
 slice it with normal walls/infill, there's nothing inside.
 
 The original mesh was used locally to measure the numbers documented in
-`flutedvase.scad`'s header, but isn't part of this repo and isn't redistributed
+`flutedvasebox.scad`'s header, but isn't part of this repo and isn't redistributed
 here — get it from the Printables page above if you want to compare against it
 yourself.
 
@@ -47,7 +47,7 @@ yourself.
 Rebuild after changing parameters from the command line:
 
 ```sh
-openscad -o out.stl -D 'width=120' -D 'depth=80' -D 'height=60' flutedvase.scad
+openscad -o out.stl -D 'width=120' -D 'depth=80' -D 'height=60' flutedvasebox.scad
 ```
 
 ## Printing
