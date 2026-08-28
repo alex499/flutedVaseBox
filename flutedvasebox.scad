@@ -83,12 +83,19 @@ width = 100;
 depth = 100;
 height = 50;
 
-/* [Flutes] */
+/* [Hidden] */
+// Everything below is measured off the reference (see the header) and kept
+// out of the Customizer so the only real decision is the size above --
+// still free to override any of it from the command line with -D.
+
+$fa = 2;
+$fs = 0.3;
+
 // Number of flutes wrapped around the full perimeter. A count, not a fixed
 // wavelength, so the pattern always tiles seamlessly as width/depth/
 // corner_radius change. Actual wavelength = perimeter/flute_count, ~5 mm at
 // the default 100x100 size.
-flute_count = 76;  // [8:1:300]
+flute_count = 76;
 // Peak-to-valley radial depth of each flute, mm (measured: 1.25949).
 flute_depth = 1.25949;
 // Corner rounding of the underlying (unfluted) squircle, mm. Measured by a
@@ -102,7 +109,6 @@ corner_radius = 5.825;
 // object becomes a plain uniform extrusion above this height.
 base_transition_height = 7.76;
 
-/* [Stacking] */
 // Height of the plain, unfluted foot ring at the very bottom -- the
 // stacking step. Measured ~2.29 mm.
 foot_height = 2.3;
@@ -110,10 +116,6 @@ foot_height = 2.3;
 // midline (at default width=100) is 49.371, the foot half-width is 47.0 --
 // a 2.371 mm inset, which is this default.
 foot_inset = 2.371;
-
-/* [Hidden] */
-$fa = 2;
-$fs = 0.3;
 
 // Tessellation quality knob, not meant to be dialled in the Customizer.
 points_per_flute = 10;
