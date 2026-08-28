@@ -22,12 +22,10 @@ It's a **solid** model, not a hollow container: the original is solid too, and t
 shape is meant for slicer **vase mode** (spiralized, single-wall) printing — don't
 slice it with normal walls/infill, there's nothing inside.
 
-## Files
-
-| File | What it is |
-|---|---|
-| `flutedvase.scad` | parametric source |
-| `reference/Behälter v2.3mf` | original reference mesh, used only for measurement (gitignored, not redistributed) |
+The original mesh was used locally to measure the numbers documented in
+`flutedvase.scad`'s header, but isn't part of this repo and isn't redistributed
+here — get it from the Printables page above if you want to compare against it
+yourself.
 
 ## Parameters (Customizer)
 
