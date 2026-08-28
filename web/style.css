@@ -1,0 +1,214 @@
+:root {
+  --bg: #f5f5f5;
+  --panel: #ffffff;
+  --ink: #1e1e21;
+  --muted: #6b6b73;
+  --line: #dcdce1;
+  --accent: #1f7a5c;
+  --accent-soft: #dcf3e9;
+  --error: #a3261c;
+  --stage: #ececed;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17171a;
+    --panel: #1f1f23;
+    --ink: #e8e8ea;
+    --muted: #9b9ba4;
+    --line: #33333a;
+    --accent: #4fd3a3;
+    --accent-soft: #163229;
+    --error: #ef7c72;
+    --stage: #232328;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ------------------------------------------------------------------- panel */
+
+#panel {
+  overflow-y: auto;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 22px 22px 32px;
+}
+
+#panel header h1 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+/* the wordmark doubles as the reset: the arrow only turns up once there is
+   something to reset, which is also what tells you the title is a control */
+#reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#reset .mark span { color: var(--accent); }
+
+#reset svg {
+  flex: none;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+#reset[data-dirty] svg { opacity: 1; }
+#reset[data-dirty]:hover svg,
+#reset:focus-visible svg { color: var(--accent); opacity: 1; }
+#reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) { #reset svg { transition: none; } }
+
+.sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.group {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.group h2 {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 78px 1fr 46px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+  font-size: 13px;
+}
+
+.row output {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+.note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* -------------------------------------------------------------------- stage */
+
+#stage { position: relative; background: var(--stage); min-width: 0; }
+
+#viewer { position: absolute; inset: 0; }
+#viewer canvas { display: block; }
+
+#status {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(520px, calc(100% - 32px));
+  padding: 6px 12px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+#status[data-state="error"] { color: var(--error); white-space: pre-wrap; }
+#status[data-state="idle"] .spinner { display: none; }
+
+.spinner {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+#downloads {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+#downloads button {
+  padding: 8px 15px;
+  font: inherit;
+  font-size: 13px;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+#downloads button:disabled { opacity: 0.4; cursor: default; }
+#downloads button:not(:disabled):hover { filter: brightness(1.08); }
+
+#panel footer {
+  margin-top: 26px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+#panel footer a { color: var(--muted); }
+
+/* ------------------------------------------------------------------ narrow */
+
+@media (max-width: 820px) {
+  #app { grid-template-columns: 1fr; height: auto; }
+  #panel { border-right: none; border-bottom: 1px solid var(--line); order: 2; }
+  #stage { order: 1; height: 60vh; }
+}

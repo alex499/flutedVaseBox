@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flutedVaseBox — configurator</title>
+<meta name="description" content="Resize a parametric fluted vase-mode box in the browser and download the STL. Runs OpenSCAD itself as WebAssembly — no server, no account.">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+
+<div id="app">
+
+  <aside id="panel">
+    <header>
+      <h1>
+        <button type="button" id="reset" title="Reset every parameter to its default">
+          <span class="mark">fluted<span>VaseBox</span></span>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+      </h1>
+      <p class="sub">A fluted, stackable box for vase-mode printing, rendered here in your browser by OpenSCAD itself.</p>
+    </header>
+
+    <section class="group">
+      <h2>Size</h2>
+      <label class="row" for="width">
+        <span>Width</span>
+        <input type="range" id="width" data-param="int" min="30" max="250" step="1" value="100">
+        <output for="width">100</output>
+      </label>
+      <label class="row" for="depth">
+        <span>Depth</span>
+        <input type="range" id="depth" data-param="int" min="30" max="250" step="1" value="100">
+        <output for="depth">100</output>
+      </label>
+      <label class="row" for="height">
+        <span>Height</span>
+        <input type="range" id="height" data-param="int" min="15" max="200" step="1" value="50">
+        <output for="height">50</output>
+      </label>
+      <p class="note">Everything else — flute pitch, corner rounding, the stacking foot — is
+      measured off the original and scales automatically; the flute count changes with size so
+      each groove stays close to 5&nbsp;mm wide, rather than stretching.</p>
+    </section>
+
+    <footer>
+      <p>Model <a href="https://github.com/alex499/flutedVaseBox">flutedVaseBox</a>, a remix of
+      <a href="https://www.printables.com/model/595626-stackable-box-vase-mode">Stackable Box (vase mode)</a>
+      by Chris (Aero)Engineering Design, CC&nbsp;BY&#8209;NC&#8209;SA&nbsp;4.0. Geometry by
+      <a href="https://openscad.org/">OpenSCAD</a> (GPL&#8209;2.0), compiled to WebAssembly.</p>
+    </footer>
+  </aside>
+
+  <main id="stage">
+    <div id="viewer"></div>
+
+    <div id="status" aria-live="polite"><span class="spinner"></span><span id="status-text">Starting…</span></div>
+
+    <div id="downloads">
+      <button type="button" id="dl-stl" disabled>Download .stl</button>
+    </div>
+  </main>
+
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

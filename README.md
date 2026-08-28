@@ -6,6 +6,11 @@ a static (non-parametric) mesh exported from FreeCAD. See the header comment in
 `flutedvasebox.scad` for exactly what was measured off the reference mesh vs. what was
 turned into a parameter, and the deviations taken on purpose.
 
+**[Configure one in your browser →](https://alex499.github.io/flutedVaseBox/)** — no
+install, no account. The page runs this same `flutedvasebox.scad` through OpenSCAD
+compiled to WebAssembly, so the STL it hands you is the one the command line would
+produce.
+
 ## Attribution & license
 
 The reference mesh is "Stackable Box (vase mode)" by **Chris (Aero)Engineering
@@ -44,3 +49,29 @@ openscad -o out.stl -D 'width=120' -D 'depth=80' -D 'height=60' -D 'flute_count=
 ## Printing
 
 Vase mode (spiralize outer contour), 1 wall, 0% infill, no top/bottom layers.
+
+## The browser configurator
+
+[`web/`](web/) is a static page that renders this file in the browser: OpenSCAD itself,
+compiled to WebAssembly, driven by the same `-D` flags you would type. There is no server
+and nothing is uploaded — the model is fetched as plain text and rendered locally.
+
+The address bar always carries the whole configuration, so a link reproduces a box
+exactly: copy it to send someone a size, or bookmark it and let the browser sync it to
+the machine next to the printer. Every parameter is written out rather than only the
+ones that differ from a default, so an old link cannot quietly change meaning when a
+default does.
+
+```sh
+cd web
+yarn install
+yarn serve      # builds _site/ and serves it on http://localhost:8080
+```
+
+`node verify.js` checks the page against the CLI: it drives the real worker, compares
+signed volume and bounding box for a spread of sizes, and sweeps the width × depth ×
+height slider range for a clean render. The sweep alone (`node verify.js sweep`) needs
+no OpenSCAD installed and is what CI runs before deploying.
+
+Editing `flutedvasebox.scad` needs no change here — the page reads it at run time. A
+*new* Customizer parameter needs a control adding to `web/index.html`.
