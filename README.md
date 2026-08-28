@@ -26,6 +26,9 @@ slice it with normal walls/infill, there's nothing inside.
 - `corner_radius` — rounding of the underlying squircle
 - `base_transition_height` — how tall the bottom fillet is before flutes reach full
   depth
+- `foot_height`, `foot_inset` — the stacking foot: a plain, unfluted ring at the
+  very bottom, set back from the flute midline so it registers inward of another
+  vase's top rim instead of overhanging it when stacked
 
 Rebuild after changing parameters from the command line:
 
