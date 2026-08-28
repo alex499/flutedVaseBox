@@ -205,18 +205,31 @@ module fluted_vase() {
     // that grows linearly from the foot's radius to the peak radius.
     // Grooves (smaller natural radius) clear the cone before ridges do,
     // which is what produces the toothed/scalloped bottom edge.
+    //
+    // The cone's two caps are built a bit beyond [foot_height,
+    // base_transition_height] (extrapolating the same linear radius law)
+    // purely so its top/bottom faces don't land exactly on the ribbed
+    // prism's -- coincident faces between the two intersection operands
+    // are what makes OpenCSG's fast preview (F5) flicker there, even
+    // though the actual render (F6) and any export are unaffected. The
+    // extrapolation doesn't change the cone's shape inside the real
+    // range, since a line is still the same line however far it's drawn.
+    cone_margin = 5;
+    cone_t0 = -cone_margin/(base_transition_height-foot_height);
+    cone_t1 = 1+cone_margin/(base_transition_height-foot_height);
     intersection() {
         translate([0, 0, foot_height])
             linear_extrude(base_transition_height - foot_height)
                 fluted_profile();
         hull() {
-            translate([0, 0, foot_height])
+            translate([0, 0, foot_height-cone_margin])
                 linear_extrude(0.01)
-                    plain_profile(width/2 - flute_depth/2 - foot_inset,
-                                  depth/2 - flute_depth/2 - foot_inset);
-            translate([0, 0, base_transition_height - 0.01])
+                    plain_profile((width/2-flute_depth/2-foot_inset) + cone_t0*(flute_depth/2+foot_inset),
+                                  (depth/2-flute_depth/2-foot_inset) + cone_t0*(flute_depth/2+foot_inset));
+            translate([0, 0, base_transition_height+cone_margin])
                 linear_extrude(0.01)
-                    plain_profile(width/2, depth/2);
+                    plain_profile((width/2-flute_depth/2-foot_inset) + cone_t1*(flute_depth/2+foot_inset),
+                                  (depth/2-flute_depth/2-foot_inset) + cone_t1*(flute_depth/2+foot_inset));
         }
     }
 
