@@ -1,0 +1,13 @@
+# Render output — generated from the .scad source
+*.stl
+*.3mf
+*.png
+
+# Reference source mesh, used only for measurements. Not ours to redistribute.
+reference/
+
+# Customizer presets, written by the OpenSCAD GUI next to the .scad
+flutedVase.json
+
+# Local tool settings
+.claude/settings.local.json
