@@ -23,36 +23,28 @@
 // rather than a simple cosine, from wherever the original was authored.
 // Peak radius 49.37868 mm matches the mesh's own bounding-box half-extent
 // exactly; valley radius is 48.12132 mm; peak-to-valley 1.25949 mm.
-// The flutes run as a straight vertical extrusion from z=7.76 to the top
-// (z=50 — full amplitude reaches the top edge, which is flat with a wavy
-// rim) and fade out over the bottom ~7.76 mm into a flush flat base.
+// The flutes run at full amplitude as a straight vertical extrusion from
+// z=7.76 all the way to the top (z=50, flat with a wavy rim). Below 7.76
+// they don't fade out towards the base -- they get cut off.
 //
-// That base isn't just a flush fade to the flute midline, though — the very
-// bottom (z=0 to 2.292) is a plain, unfluted, straight-sided ring measurably
-// SMALLER than the flute midline: half-width 47.0 mm vs. the midline's
-// 48.75 mm, a 1.75 mm setback (2.371 mm from this file's own peak-matched
-// HX, see below). That's a stacking foot/step: it registers inward of
-// another vase's top rim instead of overhanging it when stacked. Above the
-// foot, the radius grows smoothly back out to the midline while the flutes
-// simultaneously fade in.
-//
-// Critically, "fade in" doesn't happen at the same height all the way
-// around: tracing the onset of curvature above the foot at 11 x positions
-// across one period showed the ridge (x=0) doesn't reach full amplitude
-// until z=7.75, but the groove (x=2.5) is already fully settled by z=5.24 --
-// a full 2.5 mm earlier. That gap, fit to a cosine of the same phase as the
-// flute itself (mid 6.5, amplitude 1.26), is exactly what produces the
-// scalloped/toothed silhouette of the reference's bottom edge. A uniform
-// fade height for every phase (what an earlier version of this file did)
-// reads as a smoothly melted transition instead of a crisp toothed one.
-//
-// The fade itself is a plain linear ramp, not eased -- confirmed off the
-// mesh: at a fixed x, there isn't a single extra vertex between the foot
-// (z=2.292) and just below where each phase settles, meaning that whole
-// span is one flat, unbroken (i.e. straight, constant-slope) surface. So
-// the wall really does meet the flat foot at a sharp kink: a vertical rise
-// straight up from the floor, then the ribs begin cut straight off, not
-// eased into smoothly.
+// The very bottom (z=0 to 2.292) is a plain, unfluted, straight-sided ring
+// measurably SMALLER than the flute midline: half-width 47.0 mm vs. the
+// midline's 48.75 mm, a 1.75 mm setback (2.371 mm from this file's own
+// peak-matched HX, see below). That's a stacking foot/step: it registers
+// inward of another vase's top rim instead of overhanging it when
+// stacked. Above the foot, this file intersects the full-amplitude ribs
+// (unchanged, running all the way down) with a plain, unfluted CONE that
+// grows linearly in radius from the foot's radius (z=foot_height) up to
+// the peak radius (z=base_transition_height). Wherever the cone is still
+// smaller than a rib's natural radius at that angle, the rib is sliced
+// flush to the cone; once the cone grows past it, the rib's true shape
+// appears untouched. The cone being linear is confirmed off the mesh: at
+// a fixed x, there isn't a single extra vertex between the foot and just
+// below where that x's rib clears the cone -- one flat, unbroken,
+// straight-sided surface. Since grooves have a smaller natural radius
+// than ridges, they clear the cone sooner (z=5.24) than ridges do
+// (z=7.76) -- exactly the scalloped/toothed silhouette of the reference's
+// bottom edge, with no amplitude-growth model needed at all.
 //
 // Deviations from the original, on purpose:
 //   * width/depth here are the actual bounding-box size at the flute peaks
@@ -67,12 +59,12 @@
 //     up -- a wrong guess is unmistakable, it beats instantly against the
 //     wrong period) makes wavelength come out to almost exactly 5 mm; other
 //     sizes will drift from 5 mm somewhat as flute_count is a whole number.
-//   * above the flat foot, the original blends into the fluted wall through
-//     several distinct sub-stages (a short fillet, then a brief flat
-//     cylindrical run, then the flute amplitude growing in) — collapsed
-//     here into one smooth interpolation of radius-inset and flute
-//     amplitude together, approximated with a stack of thin extrusions.
-//     Close enough for a vase-mode print, not reproduced stage-for-stage.
+//   * above the flat foot, the original's clipping cone likely isn't
+//     perfectly linear all the way from the foot to the peak (there are a
+//     couple of short sub-stages visible in the mesh right near the foot
+//     and right near full amplitude) — approximated here as one single
+//     linear cone (built exactly via hull(), not stacked slices), which
+//     is close enough for a vase-mode print.
 //   * corner treatment: the flute wave is continued at constant arc-length
 //     period around the rounded corner, same as the flat faces. With the
 //     right flute_count and corner_radius (above) this makes the flat
@@ -105,14 +97,10 @@ flute_depth = 1.25949;
 // tessellation noise (rms 0.002 mm) is 5.825, well off the first visual
 // guess of 4.
 corner_radius = 5.825;
-// Height above the foot where the flute RIDGES reach full amplitude
-// (measured ~7.76 mm) -- the tallest point of the phase-dependent settle
-// height below, and where the object becomes a plain uniform extrusion.
+// Height above the foot where the clipping cone reaches the ridge (peak)
+// radius (measured ~7.76 mm) -- ridges clear the cone here, and the
+// object becomes a plain uniform extrusion above this height.
 base_transition_height = 7.76;
-// Height above the foot where the flute GROOVES reach full amplitude
-// (measured ~5.24 mm) -- grooves settle sooner than ridges, which is what
-// makes the bottom edge read as toothed rather than smoothly melted.
-valley_settle_height = 5.24;
 
 /* [Stacking] */
 // Height of the plain, unfluted foot ring at the very bottom -- the
@@ -127,8 +115,7 @@ foot_inset = 2.371;
 $fa = 2;
 $fs = 0.3;
 
-// Tessellation quality knobs, not meant to be dialled in the Customizer.
-transition_slices = 24;
+// Tessellation quality knob, not meant to be dialled in the Customizer.
 points_per_flute = 10;
 
 // Measured groove cross-section, as odd harmonics of the flute wave
@@ -175,60 +162,68 @@ function boundary_raw(s, HX, HY, R) =
 function flute_shape(theta) =
     flute_harmonics[0]*cos(theta) + flute_harmonics[1]*cos(3*theta) + flute_harmonics[2]*cos(5*theta);
 
-// Per-phase settle height: ridges (theta=0) don't reach full amplitude
-// until base_transition_height, grooves (theta=180) get there already by
-// valley_settle_height -- same cosine phase as the flute wave itself.
-function settle_height(theta) =
-    (base_transition_height+valley_settle_height)/2
-    + (base_transition_height-valley_settle_height)/2*cos(theta);
-
-function flute_point(s, HX, HY, R, half_amp, wavelength, phase0, z) =
+function flute_point(s, HX, HY, R, half_amp, wavelength, phase0) =
     let(
         b = boundary_raw(s, HX, HY, R),
         theta = 360*(s-phase0)/wavelength,
-        amp_scale = max(0, min(1, (z-foot_height)/(settle_height(theta)-foot_height))),
         scale = half_amp / (flute_harmonics[0]+flute_harmonics[1]+flute_harmonics[2]),
-        off = amp_scale*scale*flute_shape(theta)
+        off = scale*flute_shape(theta)
     )
     [ b[0] + off*b[2], b[1] + off*b[3] ];
 
-function profile_points(HX, HY, R, half_amp, count, z) =
-    let(
-        P = perimeter(HX, HY, R),
-        wavelength = P/count,
-        phase0 = HX-R,
-        n = max(count*points_per_flute, 32)
-    )
-    [ for (i=[0:n-1]) flute_point(i*P/n, HX, HY, R, half_amp, wavelength, phase0, z) ];
-
-module fluted_profile(z, inset=0) {
-    HX = width/2 - flute_depth/2 - inset;
-    HY = depth/2 - flute_depth/2 - inset;
+// The full-amplitude ribbed boundary -- constant, used unchanged both for
+// the body above the cone and for the "ribs run all the way down" shape
+// that the cone (below) clips.
+module fluted_profile() {
+    HX = width/2 - flute_depth/2;
+    HY = depth/2 - flute_depth/2;
     R = min(corner_radius, HX, HY);
-    polygon(profile_points(HX, HY, R, flute_depth/2, flute_count, z));
+    P = perimeter(HX, HY, R);
+    wavelength = P/flute_count;
+    phase0 = HX-R;
+    n = max(flute_count*points_per_flute, 32);
+    polygon([ for (i=[0:n-1]) flute_point(i*P/n, HX, HY, R, flute_depth/2, wavelength, phase0) ]);
+}
+
+// A plain (unfluted) rounded-rect boundary at the given half-extents --
+// used for the foot and for the two end caps of the clipping cone.
+module plain_profile(HX, HY) {
+    R = min(corner_radius, HX, HY);
+    P = perimeter(HX, HY, R);
+    n = max(flute_count*points_per_flute, 32);
+    polygon([ for (i=[0:n-1]) let(s=i*P/n, b=boundary_raw(s, HX, HY, R)) [b[0], b[1]] ]);
 }
 
 module fluted_vase() {
-    // Full-amplitude body -- every phase has settled by base_transition_height.
+    // Full-amplitude body -- above the cone's reach, nothing left to clip.
     translate([0, 0, base_transition_height])
         linear_extrude(height - base_transition_height)
-            fluted_profile(base_transition_height, 0);
+            fluted_profile();
 
-    // Transition: fades the foot's radius-inset back out to 0 uniformly,
-    // while the flute amplitude grows in at a rate that depends on phase
-    // (see settle_height) -- grooves finish early, ridges keep climbing.
-    for (i = [0:transition_slices-1]) {
-        z0 = foot_height + (base_transition_height-foot_height)*i/transition_slices;
-        z1 = foot_height + (base_transition_height-foot_height)*(i+1)/transition_slices;
-        t = (i+1)/transition_slices;
-        translate([0, 0, z0])
-            linear_extrude(z1-z0)
-                fluted_profile(z1, foot_inset*(1-t));
+    // Transition: the ribs run at full amplitude all the way down to the
+    // foot -- what's visible here is them getting sliced by a plain cone
+    // that grows linearly from the foot's radius to the peak radius.
+    // Grooves (smaller natural radius) clear the cone before ridges do,
+    // which is what produces the toothed/scalloped bottom edge.
+    intersection() {
+        translate([0, 0, foot_height])
+            linear_extrude(base_transition_height - foot_height)
+                fluted_profile();
+        hull() {
+            translate([0, 0, foot_height])
+                linear_extrude(0.01)
+                    plain_profile(width/2 - flute_depth/2 - foot_inset,
+                                  depth/2 - flute_depth/2 - foot_inset);
+            translate([0, 0, base_transition_height - 0.01])
+                linear_extrude(0.01)
+                    plain_profile(width/2, depth/2);
+        }
     }
 
     // Stacking foot: plain, unfluted, recessed ring at the very bottom.
     linear_extrude(foot_height)
-        fluted_profile(0, foot_inset);
+        plain_profile(width/2 - flute_depth/2 - foot_inset,
+                      depth/2 - flute_depth/2 - foot_inset);
 }
 
 fluted_vase();

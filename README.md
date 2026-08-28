@@ -24,11 +24,15 @@ slice it with normal walls/infill, there's nothing inside.
   ~5 mm at the 100×100 default)
 - `flute_depth` — peak-to-valley depth of each flute, mm
 - `corner_radius` — rounding of the underlying squircle
-- `base_transition_height` — how tall the bottom fillet is before flutes reach full
-  depth
+- `base_transition_height` — height at which the clipping cone (below) reaches
+  the flute peak radius, i.e. where the ribs are no longer being cut off
 - `foot_height`, `foot_inset` — the stacking foot: a plain, unfluted ring at the
   very bottom, set back from the flute midline so it registers inward of another
-  vase's top rim instead of overhanging it when stacked
+  vase's top rim instead of overhanging it when stacked. Above the foot, the
+  full-amplitude ribs (which run all the way down) get intersected with a plain
+  cone growing from the foot's radius to the peak radius, so they appear to
+  emerge from the foot rather than fading in — grooves clear the cone before
+  ridges do, giving the toothed/scalloped bottom edge
 
 Rebuild after changing parameters from the command line:
 
