@@ -46,11 +46,13 @@
 // fade height for every phase (what an earlier version of this file did)
 // reads as a smoothly melted transition instead of a crisp toothed one.
 //
-// The fade itself is eased (see ease()), not linear: a linear ramp meets
-// the flat foot wall below and the full-amplitude wall above at a sharp
-// kink -- a visible crease exactly where the wall stops being smooth and
-// starts being ribbed. Easing gives the blend zero slope at both ends, so
-// it reads as a rounded transition there instead of a crease.
+// The fade itself is a plain linear ramp, not eased -- confirmed off the
+// mesh: at a fixed x, there isn't a single extra vertex between the foot
+// (z=2.292) and just below where each phase settles, meaning that whole
+// span is one flat, unbroken (i.e. straight, constant-slope) surface. So
+// the wall really does meet the flat foot at a sharp kink: a vertical rise
+// straight up from the floor, then the ribs begin cut straight off, not
+// eased into smoothly.
 //
 // Deviations from the original, on purpose:
 //   * width/depth here are the actual bounding-box size at the flute peaks
@@ -126,10 +128,7 @@ $fa = 2;
 $fs = 0.3;
 
 // Tessellation quality knobs, not meant to be dialled in the Customizer.
-// transition_slices needs to be fairly high: it's approximating a curved
-// (eased) blend with flat steps, and the steps show up as visible faceting
-// at this scale if too coarse.
-transition_slices = 60;
+transition_slices = 24;
 points_per_flute = 10;
 
 // Measured groove cross-section, as odd harmonics of the flute wave
@@ -183,19 +182,11 @@ function settle_height(theta) =
     (base_transition_height+valley_settle_height)/2
     + (base_transition_height-valley_settle_height)/2*cos(theta);
 
-// Eases the raw 0..1 ramp fraction with zero slope at both ends (a
-// raised-cosine), instead of a plain linear ramp. Plain linear meets the
-// flat foot wall below and the full-amplitude wall above at a sharp kink --
-// a visible crease right where the wall stops being smooth and starts
-// being ribbed. This blends tangentially into both, reading as a rounded
-// chamfer instead of a crease.
-function ease(t) = t<=0 ? 0 : t>=1 ? 1 : 0.5-0.5*cos(180*t);
-
 function flute_point(s, HX, HY, R, half_amp, wavelength, phase0, z) =
     let(
         b = boundary_raw(s, HX, HY, R),
         theta = 360*(s-phase0)/wavelength,
-        amp_scale = ease((z-foot_height)/(settle_height(theta)-foot_height)),
+        amp_scale = max(0, min(1, (z-foot_height)/(settle_height(theta)-foot_height))),
         scale = half_amp / (flute_harmonics[0]+flute_harmonics[1]+flute_harmonics[2]),
         off = amp_scale*scale*flute_shape(theta)
     )
@@ -229,7 +220,7 @@ module fluted_vase() {
     for (i = [0:transition_slices-1]) {
         z0 = foot_height + (base_transition_height-foot_height)*i/transition_slices;
         z1 = foot_height + (base_transition_height-foot_height)*(i+1)/transition_slices;
-        t = ease((i+1)/transition_slices);
+        t = (i+1)/transition_slices;
         translate([0, 0, z0])
             linear_extrude(z1-z0)
                 fluted_profile(z1, foot_inset*(1-t));
