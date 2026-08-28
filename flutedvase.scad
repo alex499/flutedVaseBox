@@ -9,12 +9,20 @@
 // walled container with a floor and rim.
 //
 // Measured directly off the front face at full height (z=50, the flat
-// full-amplitude region, away from top/bottom edges):
-//   y(x) = -48.75 - 0.62868*cos(2*pi*x/5)
-// i.e. a radial flute of period exactly 5 mm and amplitude +/-0.62868 mm
-// (1.25736 mm peak-to-valley) wrapped around a rounded-square cross-section.
+// full-amplitude region, away from top/bottom edges) by fitting a Fourier
+// series to the raw mesh vertices, period exactly 5 mm:
+//   y(x) = -48.75 - [0.663617*cos(theta) - 0.040947*cos(3*theta) + 0.007074*cos(5*theta)]
+//   theta = 2*pi*x/5
+// A single cos(theta) term (amplitude 0.62868) fits the peaks and valleys
+// almost exactly but is off by up to 0.06 mm through the middle of each
+// flute -- about 5% of the flute depth, and enough to show up as a
+// distributed ~2% volume mismatch across the whole wall in a boolean diff
+// against the reference. The odd harmonics above fit the actual mesh to
+// within 0.001 mm (rms), so the groove cross-section is a slightly
+// "sharpened" wave, not a pure sinusoid -- consistent with a swept profile
+// rather than a simple cosine, from wherever the original was authored.
 // Peak radius 49.37868 mm matches the mesh's own bounding-box half-extent
-// exactly; valley radius is 48.12132 mm.
+// exactly; valley radius is 48.12132 mm; peak-to-valley 1.25949 mm.
 // The flutes run as a straight vertical extrusion from z=7.76 to the top
 // (z=50 — full amplitude reaches the top edge, which is flat with a wavy
 // rim) and fade out over the bottom ~7.76 mm into a flush flat base.
@@ -36,17 +44,27 @@
 //     part isn't useful.
 //   * flute count (not a fixed 5 mm wavelength) is the parameter, so the
 //     pattern always tiles with zero seam as width/depth/corner_radius
-//     change — actual wavelength = perimeter/flute_count, ~5 mm at defaults.
+//     change. At the default size the true count (76, found by sweeping
+//     flute_count against the reference until the flat-face radius lines
+//     up -- a wrong guess is unmistakable, it beats instantly against the
+//     wrong period) makes wavelength come out to almost exactly 5 mm; other
+//     sizes will drift from 5 mm somewhat as flute_count is a whole number.
 //   * above the flat foot, the original blends into the fluted wall through
 //     several distinct sub-stages (a short fillet, then a brief flat
 //     cylindrical run, then the flute amplitude growing in) — collapsed
 //     here into one smooth interpolation of radius-inset and flute
 //     amplitude together, approximated with a stack of thin extrusions.
 //     Close enough for a vase-mode print, not reproduced stage-for-stage.
-//   * corner treatment (how the flutes wrap the rounded corners) couldn't be
-//     pinned down exactly from the raw mesh — approximated here by
-//     continuing the same flute wave at constant arc-length period around a
-//     simple rounded-rect corner.
+//   * corner treatment: the flute wave is continued at constant arc-length
+//     period around the rounded corner, same as the flat faces. With the
+//     right flute_count and corner_radius (above) this makes the flat
+//     faces match the reference to within tessellation noise (rms
+//     0.002 mm), but the corner itself still has a real, unresolved
+//     mismatch (rms 0.7 mm, max 1.3 mm, on a corner radius-from-center that
+//     runs 50-67 mm) — the true corner geometry isn't simply the same wave
+//     wrapped at constant arc length. Left as the largest remaining
+//     accuracy gap; the corner is a small fraction of the perimeter so the
+//     effect on printed appearance is minor.
 //
 // Stage: complete.
 
@@ -60,11 +78,15 @@ height = 50;
 // wavelength, so the pattern always tiles seamlessly as width/depth/
 // corner_radius change. Actual wavelength = perimeter/flute_count, ~5 mm at
 // the default 100x100 size.
-flute_count = 78;  // [8:1:300]
-// Peak-to-valley radial depth of each flute, mm (measured: 1.25736).
-flute_depth = 1.25736;
-// Corner rounding of the underlying (unfluted) squircle, mm.
-corner_radius = 4;
+flute_count = 76;  // [8:1:300]
+// Peak-to-valley radial depth of each flute, mm (measured: 1.25949).
+flute_depth = 1.25949;
+// Corner rounding of the underlying (unfluted) squircle, mm. Measured by a
+// least-squares search (not directly readable off the mesh): the value that
+// makes this file's flat-face radius match the reference to within
+// tessellation noise (rms 0.002 mm) is 5.825, well off the first visual
+// guess of 4.
+corner_radius = 5.825;
 // Height above the foot where the flutes reach full size and full
 // amplitude (measured ~7.76 mm).
 base_transition_height = 7.76;
@@ -84,7 +106,13 @@ $fs = 0.3;
 
 // Tessellation quality knobs, not meant to be dialled in the Customizer.
 transition_slices = 24;
-points_per_flute = 6;
+points_per_flute = 10;
+
+// Measured groove cross-section, as odd harmonics of the flute wave
+// (coefficients for cos(theta), cos(3*theta), cos(5*theta)); their sum is
+// the peak offset, scaled below so the sum always equals flute_depth/2
+// regardless of what flute_depth is set to.
+flute_harmonics = [0.663617, -0.040947, 0.007074];
 
 // --- Rounded-rect boundary, traced by arc length ---
 // Walks the rounded-rect perimeter counter-clockwise starting at the left end
@@ -121,10 +149,15 @@ function boundary_raw(s, HX, HY, R) =
              let(a=180+90*(s-b6)/La, cx=-(HX-R), cy=-(HY-R))
              [ cx+R*cos(a), cy+R*sin(a), cos(a), sin(a) ];
 
+function flute_shape(theta) =
+    flute_harmonics[0]*cos(theta) + flute_harmonics[1]*cos(3*theta) + flute_harmonics[2]*cos(5*theta);
+
 function flute_point(s, HX, HY, R, half_amp, wavelength, phase0, amp_scale) =
     let(
         b = boundary_raw(s, HX, HY, R),
-        off = amp_scale*half_amp*cos(360*(s-phase0)/wavelength)
+        theta = 360*(s-phase0)/wavelength,
+        scale = half_amp / (flute_harmonics[0]+flute_harmonics[1]+flute_harmonics[2]),
+        off = amp_scale*scale*flute_shape(theta)
     )
     [ b[0] + off*b[2], b[1] + off*b[3] ];
 
