@@ -6,6 +6,18 @@ a static (non-parametric) mesh exported from FreeCAD. See the header comment in
 `flutedvase.scad` for exactly what was measured off the reference mesh vs. what was
 turned into a parameter, and the deviations taken on purpose.
 
+## Attribution & license
+
+The reference mesh is "Stackable Box (vase mode)" by **Chris (Aero)Engineering
+Design**, published on Printables
+(model 595626, https://www.printables.com/model/595626-stackable-box-vase-mode),
+licensed **CC BY-NC-SA 4.0** (Attribution–NonCommercial–ShareAlike). Remixing is
+permitted under that license; commercial use is not. As required by the
+share-alike term, this derivative (`flutedvase.scad` and everything in this
+folder) is licensed under those same CC BY-NC-SA 4.0 terms — see `LICENSE`.
+Any redistribution must credit the original author and may not be used
+commercially.
+
 It's a **solid** model, not a hollow container: the original is solid too, and this
 shape is meant for slicer **vase mode** (spiralized, single-wall) printing — don't
 slice it with normal walls/infill, there's nothing inside.
