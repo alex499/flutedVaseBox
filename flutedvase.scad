@@ -34,7 +34,17 @@
 // HX, see below). That's a stacking foot/step: it registers inward of
 // another vase's top rim instead of overhanging it when stacked. Above the
 // foot, the radius grows smoothly back out to the midline while the flutes
-// simultaneously fade in, reaching full size and full amplitude by z=7.76.
+// simultaneously fade in.
+//
+// Critically, "fade in" doesn't happen at the same height all the way
+// around: tracing the onset of curvature above the foot at 11 x positions
+// across one period showed the ridge (x=0) doesn't reach full amplitude
+// until z=7.75, but the groove (x=2.5) is already fully settled by z=5.24 --
+// a full 2.5 mm earlier. That gap, fit to a cosine of the same phase as the
+// flute itself (mid 6.5, amplitude 1.26), is exactly what produces the
+// scalloped/toothed silhouette of the reference's bottom edge. A uniform
+// fade height for every phase (what an earlier version of this file did)
+// reads as a smoothly melted transition instead of a crisp toothed one.
 //
 // Deviations from the original, on purpose:
 //   * width/depth here are the actual bounding-box size at the flute peaks
@@ -87,9 +97,14 @@ flute_depth = 1.25949;
 // tessellation noise (rms 0.002 mm) is 5.825, well off the first visual
 // guess of 4.
 corner_radius = 5.825;
-// Height above the foot where the flutes reach full size and full
-// amplitude (measured ~7.76 mm).
+// Height above the foot where the flute RIDGES reach full amplitude
+// (measured ~7.76 mm) -- the tallest point of the phase-dependent settle
+// height below, and where the object becomes a plain uniform extrusion.
 base_transition_height = 7.76;
+// Height above the foot where the flute GROOVES reach full amplitude
+// (measured ~5.24 mm) -- grooves settle sooner than ridges, which is what
+// makes the bottom edge read as toothed rather than smoothly melted.
+valley_settle_height = 5.24;
 
 /* [Stacking] */
 // Height of the plain, unfluted foot ring at the very bottom -- the
@@ -152,47 +167,55 @@ function boundary_raw(s, HX, HY, R) =
 function flute_shape(theta) =
     flute_harmonics[0]*cos(theta) + flute_harmonics[1]*cos(3*theta) + flute_harmonics[2]*cos(5*theta);
 
-function flute_point(s, HX, HY, R, half_amp, wavelength, phase0, amp_scale) =
+// Per-phase settle height: ridges (theta=0) don't reach full amplitude
+// until base_transition_height, grooves (theta=180) get there already by
+// valley_settle_height -- same cosine phase as the flute wave itself.
+function settle_height(theta) =
+    (base_transition_height+valley_settle_height)/2
+    + (base_transition_height-valley_settle_height)/2*cos(theta);
+
+function flute_point(s, HX, HY, R, half_amp, wavelength, phase0, z) =
     let(
         b = boundary_raw(s, HX, HY, R),
         theta = 360*(s-phase0)/wavelength,
+        amp_scale = max(0, min(1, (z-foot_height)/(settle_height(theta)-foot_height))),
         scale = half_amp / (flute_harmonics[0]+flute_harmonics[1]+flute_harmonics[2]),
         off = amp_scale*scale*flute_shape(theta)
     )
     [ b[0] + off*b[2], b[1] + off*b[3] ];
 
-function profile_points(HX, HY, R, half_amp, count, amp_scale) =
+function profile_points(HX, HY, R, half_amp, count, z) =
     let(
         P = perimeter(HX, HY, R),
         wavelength = P/count,
         phase0 = HX-R,
         n = max(count*points_per_flute, 32)
     )
-    [ for (i=[0:n-1]) flute_point(i*P/n, HX, HY, R, half_amp, wavelength, phase0, amp_scale) ];
+    [ for (i=[0:n-1]) flute_point(i*P/n, HX, HY, R, half_amp, wavelength, phase0, z) ];
 
-module fluted_profile(amp_scale, inset=0) {
+module fluted_profile(z, inset=0) {
     HX = width/2 - flute_depth/2 - inset;
     HY = depth/2 - flute_depth/2 - inset;
     R = min(corner_radius, HX, HY);
-    polygon(profile_points(HX, HY, R, flute_depth/2, flute_count, amp_scale));
+    polygon(profile_points(HX, HY, R, flute_depth/2, flute_count, z));
 }
 
 module fluted_vase() {
-    // Full-amplitude body.
+    // Full-amplitude body -- every phase has settled by base_transition_height.
     translate([0, 0, base_transition_height])
         linear_extrude(height - base_transition_height)
-            fluted_profile(1, 0);
+            fluted_profile(base_transition_height, 0);
 
-    // Transition: fades the foot's radius-inset back out to 0 while the
-    // flute amplitude grows in from 0 to 1, together, from the top of the
-    // foot to base_transition_height.
+    // Transition: fades the foot's radius-inset back out to 0 uniformly,
+    // while the flute amplitude grows in at a rate that depends on phase
+    // (see settle_height) -- grooves finish early, ridges keep climbing.
     for (i = [0:transition_slices-1]) {
         z0 = foot_height + (base_transition_height-foot_height)*i/transition_slices;
         z1 = foot_height + (base_transition_height-foot_height)*(i+1)/transition_slices;
         t = (i+1)/transition_slices;
         translate([0, 0, z0])
             linear_extrude(z1-z0)
-                fluted_profile(t, foot_inset*(1-t));
+                fluted_profile(z1, foot_inset*(1-t));
     }
 
     // Stacking foot: plain, unfluted, recessed ring at the very bottom.
