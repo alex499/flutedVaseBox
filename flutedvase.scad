@@ -78,20 +78,9 @@
 //     0.002 mm), but the corner itself still has a real, unresolved
 //     mismatch (rms 0.7 mm, max 1.3 mm, on a corner radius-from-center that
 //     runs 50-67 mm) — the true corner geometry isn't simply the same wave
-//     wrapped at constant arc length. Confirmed the two ridges flanking
-//     each corner's bisector don't meet by continuing the wave through a
-//     valley there -- the reference mesh has a real ~3.5 degree gap in the
-//     tessellation right on the bisector, bounded by two mirror-symmetric
-//     ridge peaks (r=67.206 both sides) with nothing between them, i.e. a
-//     small flat untextured bridge connects them directly (see
-//     nearest_peak_span/bridge_point). Reproduced structurally, but this
-//     file's own arc-length phase tracking is already a bit off by the
-//     time it reaches the bisector, so the ridges it bridges between sit
-//     at r=66.6, short of the reference's r=67.2 -- the bridge is the
-//     right shape, wired to the wrong two points. Fixing that needs the
-//     true (non-arc) corner curve, not just the bridge; left as the
-//     largest remaining accuracy gap. Small fraction of the perimeter, so
-//     the effect on printed appearance is minor.
+//     wrapped at constant arc length. Left as the largest remaining
+//     accuracy gap; the corner is a small fraction of the perimeter so the
+//     effect on printed appearance is minor.
 //
 // Stage: complete.
 
@@ -202,7 +191,7 @@ function settle_height(theta) =
 // chamfer instead of a crease.
 function ease(t) = t<=0 ? 0 : t>=1 ? 1 : 0.5-0.5*cos(180*t);
 
-function flute_point_raw(s, HX, HY, R, half_amp, wavelength, phase0, z) =
+function flute_point(s, HX, HY, R, half_amp, wavelength, phase0, z) =
     let(
         b = boundary_raw(s, HX, HY, R),
         theta = 360*(s-phase0)/wavelength,
@@ -212,54 +201,14 @@ function flute_point_raw(s, HX, HY, R, half_amp, wavelength, phase0, z) =
     )
     [ b[0] + off*b[2], b[1] + off*b[3] ];
 
-// The two ridges flanking a corner's bisector, each running at constant
-// arc-length period from the flat faces, don't quite reach each other: the
-// reference mesh has a real gap in the tessellation spanning ~3.5 degrees
-// dead on the bisector, bounded on each side by a ridge peak (r=67.206 at
-// both, confirmed mirror-symmetric) with nothing in between -- i.e. a
-// small flat, untextured bridge connects the two nearest ridge peaks
-// directly, rather than the ridge wave continuing through a valley there.
-// Since every harmonic in flute_shape has zero slope at theta=0, the peaks
-// sit at exactly theta = k*360, so the bridge endpoints are exact, not
-// approximated.
-function nearest_peak_span(s_mid, wavelength, phase0) =
-    let(
-        theta_mid = 360*(s_mid-phase0)/wavelength,
-        k = floor(theta_mid/360)
-    )
-    [ phase0 + k*wavelength, phase0 + (k+1)*wavelength ];
-
-function bridge_point(s, span, HX, HY, R, half_amp, wavelength, phase0, z) =
-    let(
-        p0 = flute_point_raw(span[0], HX, HY, R, half_amp, wavelength, phase0, z),
-        p1 = flute_point_raw(span[1], HX, HY, R, half_amp, wavelength, phase0, z),
-        t = (s-span[0])/(span[1]-span[0])
-    )
-    [ p0[0]+t*(p1[0]-p0[0]), p0[1]+t*(p1[1]-p0[1]) ];
-
-function in_span(s, span) = s >= span[0] && s <= span[1];
-
-function flute_point(s, HX, HY, R, half_amp, wavelength, phase0, z, spans) =
-    in_span(s, spans[0]) ? bridge_point(s, spans[0], HX, HY, R, half_amp, wavelength, phase0, z) :
-    in_span(s, spans[1]) ? bridge_point(s, spans[1], HX, HY, R, half_amp, wavelength, phase0, z) :
-    in_span(s, spans[2]) ? bridge_point(s, spans[2], HX, HY, R, half_amp, wavelength, phase0, z) :
-    in_span(s, spans[3]) ? bridge_point(s, spans[3], HX, HY, R, half_amp, wavelength, phase0, z) :
-    flute_point_raw(s, HX, HY, R, half_amp, wavelength, phase0, z);
-
 function profile_points(HX, HY, R, half_amp, count, z) =
     let(
         P = perimeter(HX, HY, R),
         wavelength = P/count,
         phase0 = HX-R,
-        n = max(count*points_per_flute, 32),
-        La = fillet_arc_len(R),
-        Ls = 2*(HX-R),
-        Ld = 2*(HY-R),
-        b0 = Ls, b2 = b0+La+Ld, b4 = b2+La+Ls, b6 = b4+La+Ld,
-        mids = [b0+La/2, b2+La/2, b4+La/2, b6+La/2],
-        spans = [for (m = mids) nearest_peak_span(m, wavelength, phase0)]
+        n = max(count*points_per_flute, 32)
     )
-    [ for (i=[0:n-1]) flute_point(i*P/n, HX, HY, R, half_amp, wavelength, phase0, z, spans) ];
+    [ for (i=[0:n-1]) flute_point(i*P/n, HX, HY, R, half_amp, wavelength, phase0, z) ];
 
 module fluted_profile(z, inset=0) {
     HX = width/2 - flute_depth/2 - inset;
