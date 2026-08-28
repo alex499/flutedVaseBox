@@ -19,6 +19,15 @@
 // (z=50 — full amplitude reaches the top edge, which is flat with a wavy
 // rim) and fade out over the bottom ~7.76 mm into a flush flat base.
 //
+// That base isn't just a flush fade to the flute midline, though — the very
+// bottom (z=0 to 2.292) is a plain, unfluted, straight-sided ring measurably
+// SMALLER than the flute midline: half-width 47.0 mm vs. the midline's
+// 48.75 mm, a 1.75 mm setback (2.371 mm from this file's own peak-matched
+// HX, see below). That's a stacking foot/step: it registers inward of
+// another vase's top rim instead of overhanging it when stacked. Above the
+// foot, the radius grows smoothly back out to the midline while the flutes
+// simultaneously fade in, reaching full size and full amplitude by z=7.76.
+//
 // Deviations from the original, on purpose:
 //   * width/depth here are the actual bounding-box size at the flute peaks
 //     (base_half_extent = width/2 - flute_depth/2), whereas the original's own
@@ -28,13 +37,12 @@
 //   * flute count (not a fixed 5 mm wavelength) is the parameter, so the
 //     pattern always tiles with zero seam as width/depth/corner_radius
 //     change — actual wavelength = perimeter/flute_count, ~5 mm at defaults.
-//   * the bottom fillet is a straight amplitude fade with height (flat at
-//     z=0, full amplitude at base_transition_height), approximated with a
-//     stack of thin extrusions. The original's bottom edge is a fillet
-//     along the actual wavy wall/floor intersection, which reads as a
-//     slightly toothed/scalloped hem rather than a smooth fade — close
-//     enough for a vase-mode print, not reproduced exactly (no CAD fillet
-//     operation along an arbitrary 3D edge is available in plain OpenSCAD).
+//   * above the flat foot, the original blends into the fluted wall through
+//     several distinct sub-stages (a short fillet, then a brief flat
+//     cylindrical run, then the flute amplitude growing in) — collapsed
+//     here into one smooth interpolation of radius-inset and flute
+//     amplitude together, approximated with a stack of thin extrusions.
+//     Close enough for a vase-mode print, not reproduced stage-for-stage.
 //   * corner treatment (how the flutes wrap the rounded corners) couldn't be
 //     pinned down exactly from the raw mesh — approximated here by
 //     continuing the same flute wave at constant arc-length period around a
@@ -57,9 +65,18 @@ flute_count = 78;  // [8:1:300]
 flute_depth = 1.25736;
 // Corner rounding of the underlying (unfluted) squircle, mm.
 corner_radius = 4;
-// Height of the bottom fillet blending the flutes down into a flush flat
-// base (measured ~7.76 mm).
+// Height above the foot where the flutes reach full size and full
+// amplitude (measured ~7.76 mm).
 base_transition_height = 7.76;
+
+/* [Stacking] */
+// Height of the plain, unfluted foot ring at the very bottom -- the
+// stacking step. Measured ~2.29 mm.
+foot_height = 2.3;
+// How far the foot is set back from the flute midline radius, mm. Measured
+// midline (at default width=100) is 49.371, the foot half-width is 47.0 --
+// a 2.371 mm inset, which is this default.
+foot_inset = 2.371;
 
 /* [Hidden] */
 $fa = 2;
@@ -120,28 +137,34 @@ function profile_points(HX, HY, R, half_amp, count, amp_scale) =
     )
     [ for (i=[0:n-1]) flute_point(i*P/n, HX, HY, R, half_amp, wavelength, phase0, amp_scale) ];
 
-module fluted_profile(amp_scale) {
-    HX = width/2 - flute_depth/2;
-    HY = depth/2 - flute_depth/2;
-    polygon(profile_points(HX, HY, corner_radius, flute_depth/2, flute_count, amp_scale));
+module fluted_profile(amp_scale, inset=0) {
+    HX = width/2 - flute_depth/2 - inset;
+    HY = depth/2 - flute_depth/2 - inset;
+    R = min(corner_radius, HX, HY);
+    polygon(profile_points(HX, HY, R, flute_depth/2, flute_count, amp_scale));
 }
 
 module fluted_vase() {
     // Full-amplitude body.
     translate([0, 0, base_transition_height])
         linear_extrude(height - base_transition_height)
-            fluted_profile(1);
+            fluted_profile(1, 0);
 
-    // Bottom fillet: stepped loft fading amplitude from 0 (flush base) to 1
-    // (matches the body above) over base_transition_height.
+    // Transition: fades the foot's radius-inset back out to 0 while the
+    // flute amplitude grows in from 0 to 1, together, from the top of the
+    // foot to base_transition_height.
     for (i = [0:transition_slices-1]) {
-        z0 = base_transition_height*i/transition_slices;
-        z1 = base_transition_height*(i+1)/transition_slices;
-        amp = (i+1)/transition_slices;
+        z0 = foot_height + (base_transition_height-foot_height)*i/transition_slices;
+        z1 = foot_height + (base_transition_height-foot_height)*(i+1)/transition_slices;
+        t = (i+1)/transition_slices;
         translate([0, 0, z0])
             linear_extrude(z1-z0)
-                fluted_profile(amp);
+                fluted_profile(t, foot_inset*(1-t));
     }
+
+    // Stacking foot: plain, unfluted, recessed ring at the very bottom.
+    linear_extrude(foot_height)
+        fluted_profile(0, foot_inset);
 }
 
 fluted_vase();
