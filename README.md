@@ -1,4 +1,4 @@
-# flutedVase
+# flutedVaseBox
 
 Parametric OpenSCAD rebuild of `Behälter v2 100x100x50` — a rounded-square block
 with a shallow vertical flute/rib texture wrapped around all four sides, originally

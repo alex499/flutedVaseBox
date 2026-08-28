@@ -1,4 +1,4 @@
-// flutedVase — parametric rebuild of "Behälter v2 100x100x50"
+// flutedVaseBox — parametric rebuild of "Behälter v2 100x100x50"
 //
 // Reconstructed from the reference mesh in reference/Behälter v2.3mf by direct
 // measurement: unzipping the .3mf and parsing 3D/3dmodel.model's raw vertex
