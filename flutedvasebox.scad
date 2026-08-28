@@ -67,15 +67,19 @@
 //     linear cone (built exactly via hull(), not stacked slices), which
 //     is close enough for a vase-mode print.
 //   * corner treatment: the flute wave is continued at constant arc-length
-//     period around the rounded corner, same as the flat faces. With the
-//     right flute_count and corner_radius (above) this makes the flat
-//     faces match the reference to within tessellation noise (rms
-//     0.002 mm), but the corner itself still has a real, unresolved
-//     mismatch (rms 0.7 mm, max 1.3 mm, on a corner radius-from-center that
-//     runs 50-67 mm) — the true corner geometry isn't simply the same wave
-//     wrapped at constant arc length. Left as the largest remaining
-//     accuracy gap; the corner is a small fraction of the perimeter so the
-//     effect on printed appearance is minor.
+//     period around the rounded corner, same as the flat faces, which gets
+//     everything right (rms 0.002 mm against the reference) except a
+//     roughly 8-degree window straddling each bisector, where the
+//     continued wave lands on a groove instead of a ridge -- a visible
+//     dent on all four corners, not present in the reference. Bridged
+//     straight across between the two ridges flanking each bisector (see
+//     nearest_peak_span/bridge_point) instead of following the wave
+//     through the dip, which removes the dent but runs about 0.6 mm short
+//     of the reference's own ridge height right at the corners (~67.2 mm;
+//     this file's bridge lands at ~66.6 mm) -- the reference's ridge
+//     amplitude appears to grow specifically near the corners, and exactly
+//     why isn't pinned down. Left as the remaining accuracy gap; a flat
+//     corner beats a dented one even if not perfectly full-height.
 //
 // Stage: complete.
 
@@ -188,6 +192,44 @@ function flute_point(s, HX, HY, R, half_amp, wavelength, phase0) =
     )
     [ b[0] + off*b[2], b[1] + off*b[3] ];
 
+// The wave, continued at constant arc-length period through each corner,
+// doesn't land on a ridge at the bisector -- it lands on a groove (a
+// property of flute_count relative to the corner's own symmetry, not
+// something either corner_radius or flute_count individually fixes), so
+// each corner shows a visible dent instead of a straight run. Bridging
+// straight between the two ridges flanking each bisector (nearest_peak_span
+// finds them: every harmonic in flute_shape has zero slope at theta=0, so
+// a ridge is at exactly s = phase0 + k*wavelength for some integer k)
+// removes the dent on all four corners. Their radius there (~66.6mm at the
+// default size) runs a bit short of the reference's own corner ridges
+// (~67.2mm, confirmed off the mesh) -- fixing that exactly would need
+// knowing why the reference's ridge amplitude grows specifically near the
+// corners, which isn't pinned down. Removing the dent altogether matters
+// more than closing that last ~0.6mm.
+function nearest_peak_span(s_mid, wavelength, phase0) =
+    let(
+        theta_mid = 360*(s_mid-phase0)/wavelength,
+        k = floor(theta_mid/360)
+    )
+    [ phase0 + k*wavelength, phase0 + (k+1)*wavelength ];
+
+function bridge_point(s, span, HX, HY, R, half_amp, wavelength, phase0) =
+    let(
+        p0 = flute_point(span[0], HX, HY, R, half_amp, wavelength, phase0),
+        p1 = flute_point(span[1], HX, HY, R, half_amp, wavelength, phase0),
+        t = (s-span[0])/(span[1]-span[0])
+    )
+    [ p0[0]+t*(p1[0]-p0[0]), p0[1]+t*(p1[1]-p0[1]) ];
+
+function in_span(s, span) = s >= span[0] && s <= span[1];
+
+function flute_point_bridged(s, HX, HY, R, half_amp, wavelength, phase0, spans) =
+    in_span(s, spans[0]) ? bridge_point(s, spans[0], HX, HY, R, half_amp, wavelength, phase0) :
+    in_span(s, spans[1]) ? bridge_point(s, spans[1], HX, HY, R, half_amp, wavelength, phase0) :
+    in_span(s, spans[2]) ? bridge_point(s, spans[2], HX, HY, R, half_amp, wavelength, phase0) :
+    in_span(s, spans[3]) ? bridge_point(s, spans[3], HX, HY, R, half_amp, wavelength, phase0) :
+    flute_point(s, HX, HY, R, half_amp, wavelength, phase0);
+
 // The full-amplitude ribbed boundary -- constant, used unchanged both for
 // the body above the cone and for the "ribs run all the way down" shape
 // that the cone (below) clips.
@@ -199,7 +241,13 @@ module fluted_profile() {
     wavelength = P/flute_count;
     phase0 = HX-R;
     n = max(flute_count*points_per_flute, 32);
-    polygon([ for (i=[0:n-1]) flute_point(i*P/n, HX, HY, R, flute_depth/2, wavelength, phase0) ]);
+    La = fillet_arc_len(R);
+    Ls = 2*(HX-R);
+    Ld = 2*(HY-R);
+    b0 = Ls; b2 = b0+La+Ld; b4 = b2+La+Ls; b6 = b4+La+Ld;
+    mids = [b0+La/2, b2+La/2, b4+La/2, b6+La/2];
+    spans = [for (m = mids) nearest_peak_span(m, wavelength, phase0)];
+    polygon([ for (i=[0:n-1]) flute_point_bridged(i*P/n, HX, HY, R, flute_depth/2, wavelength, phase0, spans) ]);
 }
 
 // A plain (unfluted) rounded-rect boundary at the given half-extents --
