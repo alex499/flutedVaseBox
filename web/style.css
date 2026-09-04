@@ -117,12 +117,20 @@ body {
   font-size: 13px;
 }
 
-.row output {
+.row input.num {
+  width: 46px;
+  font: inherit;
   font-variant-numeric: tabular-nums;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--ink);
   text-align: right;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 4px;
 }
+
+.row input.num:focus { outline: none; border-color: var(--accent); }
 
 input[type="range"] { width: 100%; accent-color: var(--accent); }
 

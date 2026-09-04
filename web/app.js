@@ -232,12 +232,24 @@ const reset = document.getElementById("reset");
 // an empty fragment is the defaults, so this is the link the untouched page carries
 const defaultLink = serialise(parse("", schema()));
 
+// The range is the source of truth (its id is the OpenSCAD variable name); the number
+// field beside it is a second view onto the same value, kept live except while it's
+// being typed into, so a partial value like "3" (below min) isn't clamped mid-keystroke.
 function syncUI() {
-  for (const el of document.querySelectorAll("output[for]")) {
-    const input = document.getElementById(el.htmlFor);
-    el.textContent = input.value;
+  for (const el of document.querySelectorAll("[data-sync]")) {
+    if (el === document.activeElement) continue;
+    el.value = document.getElementById(el.dataset.sync).value;
   }
   reset.toggleAttribute("data-dirty", serialise(readParams()) !== defaultLink);
+}
+
+// commit whatever is in a number field onto its range, clamped to range
+function commitNumberField(el) {
+  const range = document.getElementById(el.dataset.sync);
+  const n = parseInt(el.value, 10);
+  range.value = Number.isFinite(n)
+    ? Math.min(Number(range.max), Math.max(Number(range.min), n))
+    : range.value;
 }
 
 let debounce = 0;
@@ -248,7 +260,24 @@ function onChange() {
   debounce = setTimeout(() => { rememberInUrl(); requestPreview(); }, 150);
 }
 
-document.getElementById("panel").addEventListener("input", onChange);
+const panel = document.getElementById("panel");
+
+// sliders (and anything else tagged data-param) update live as they're dragged
+panel.addEventListener("input", (e) => {
+  if (e.target.dataset.sync) return;   // number fields commit on change/Enter, not per keystroke
+  onChange();
+});
+
+// number fields commit on blur, or on Enter (which also blurs, via the same handler)
+panel.addEventListener("change", (e) => {
+  if (!e.target.dataset.sync) return;
+  commitNumberField(e.target);
+  onChange();
+});
+panel.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.dataset.sync) e.target.blur();
+});
+
 reset.addEventListener("click", () => { applyParams(parse("", schema())); onChange(); });
 dlStl.addEventListener("click", requestDownload);
 
